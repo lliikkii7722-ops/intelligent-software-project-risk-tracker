@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Risk Dashboard</title>
+</head>
+
+<body>
+
+<h1>Notifications</h1>
+
+<ul id="notifications"></ul>
+
+<script>
+
+    fetch("http://localhost:8080/api/notifications")
+    .then(res => res.json())
+    .then(data => {
+
+        let list = document.getElementById("notifications");
+
+        data.forEach(n => {
+
+            let li = document.createElement("li");
+            li.innerText = n.message + " - " + n.status;
+
+            list.appendChild(li);
+
+        });
+
+    });
+
+</script>
+
+</body>
+</html>

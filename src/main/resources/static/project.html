@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Projects</title>
+</head>
+<body>
+
+<h1>Projects</h1>
+
+<form id="projectForm">
+    <input type="text" id="name" placeholder="Project Name" required>
+    <input type="text" id="desc" placeholder="Description" required>
+    <input type="date" id="start" required>
+    <input type="date" id="end" required>
+    <button type="submit">Add Project</button>
+</form>
+
+<h2>All Projects</h2>
+<ul id="projectList"></ul>
+
+<script>
+    const form = document.getElementById("projectForm");
+    form.addEventListener("submit", e => {
+        e.preventDefault();
+
+        const project = {
+            name: document.getElementById("name").value,
+            description: document.getElementById("desc").value,
+            startDate: document.getElementById("start").value,
+            endDate: document.getElementById("end").value
+        };
+
+        fetch("http://localhost:8080/api/projects", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(project)
+        })
+        .then(res => res.json())
+        .then(() => loadProjects());
+    });
+
+    function loadProjects() {
+        fetch("http://localhost:8080/api/projects")
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById("projectList");
+            list.innerHTML = "";
+            data.forEach(p => {
+                let li = document.createElement("li");
+                li.innerText = p.name + " (" + p.startDate + " → " + p.endDate + ")";
+                list.appendChild(li);
+            });
+        });
+    }
+
+    // Initial load
+    loadProjects();
+</script>
+
+</body>
+</html>
