@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { getRisks, getRiskAnalytics } from "../services/api";
 import { toast } from "react-toastify";
 import "./RiskAnalytics.css";
@@ -7,27 +7,6 @@ function RiskAnalytics() {
   const [risks, setRisks] = useState([]);
   const [selectedRiskId, setSelectedRiskId] = useState("");
   const [analytics, setAnalytics] = useState(null);
-
-  useEffect(() => {
-    loadRisks();
-  }, []);
-
-  const loadRisks = () => {
-    getRisks()
-      .then((res) => {
-        const data = Array.isArray(res.data) ? res.data : [];
-        setRisks(data);
-
-        if (data.length > 0) {
-          setSelectedRiskId(String(data[0].id));
-          loadAnalytics(data[0].id);
-        }
-      })
-      .catch((err) => {
-        console.error("Load risks error:", err.response?.data || err.message);
-        toast.error("Failed to load risks");
-      });
-  };
 
   const normalizeAnalytics = (data) => {
     if (!data) return null;
@@ -72,7 +51,7 @@ function RiskAnalytics() {
     };
   };
 
-  const loadAnalytics = (id) => {
+  const loadAnalytics = useCallback((id) => {
     getRiskAnalytics(id)
       .then((res) => {
         console.log("Risk Analytics Response:", res.data);
@@ -82,7 +61,28 @@ function RiskAnalytics() {
         console.error("Load analytics error:", err.response?.data || err.message);
         toast.error("Failed to load analytics");
       });
-  };
+  }, []);
+
+  const loadRisks = useCallback(() => {
+    getRisks()
+      .then((res) => {
+        const data = Array.isArray(res.data) ? res.data : [];
+        setRisks(data);
+
+        if (data.length > 0) {
+          setSelectedRiskId(String(data[0].id));
+          loadAnalytics(data[0].id);
+        }
+      })
+      .catch((err) => {
+        console.error("Load risks error:", err.response?.data || err.message);
+        toast.error("Failed to load risks");
+      });
+  }, [loadAnalytics]);
+
+  useEffect(() => {
+    loadRisks();
+  }, [loadRisks]);
 
   const handleChange = (e) => {
     const id = e.target.value;
