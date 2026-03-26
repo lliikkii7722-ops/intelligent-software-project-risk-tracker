@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { getRisks, getRiskAnalytics } from "../services/api";
 import { toast } from "react-toastify";
 import "./RiskAnalytics.css";
@@ -7,8 +7,12 @@ function RiskAnalytics() {
   const [risks, setRisks] = useState([]);
   const [selectedRiskId, setSelectedRiskId] = useState("");
   const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const normalizeAnalytics = (data) => {
+  // Prevent stale/older API responses from overwriting latest data
+  const latestRequestId = useRef(0);
+
+  const normalizeAnalytics = useCallback((data) => {
     if (!data) return null;
 
     return {
@@ -49,45 +53,71 @@ function RiskAnalytics() {
         data.qualityRecommendation ??
         "No recommendation available."
     };
-  };
-
-  const loadAnalytics = useCallback((id) => {
-    getRiskAnalytics(id)
-      .then((res) => {
-        console.log("Risk Analytics Response:", res.data);
-        setAnalytics(normalizeAnalytics(res.data));
-      })
-      .catch((err) => {
-        console.error("Load analytics error:", err.response?.data || err.message);
-        toast.error("Failed to load analytics");
-      });
   }, []);
 
-  const loadRisks = useCallback(() => {
-    getRisks()
-      .then((res) => {
-        const data = Array.isArray(res.data) ? res.data : [];
-        setRisks(data);
+  const loadAnalytics = useCallback(
+    async (id) => {
+      if (!id) return;
 
-        if (data.length > 0) {
-          setSelectedRiskId(String(data[0].id));
-          loadAnalytics(data[0].id);
+      const requestId = ++latestRequestId.current;
+      setLoading(true);
+
+      try {
+        const res = await getRiskAnalytics(id);
+        console.log("Risk Analytics Response:", res.data);
+
+        // Only update if this is the latest request
+        if (requestId === latestRequestId.current) {
+          setAnalytics(normalizeAnalytics(res.data));
         }
-      })
-      .catch((err) => {
-        console.error("Load risks error:", err.response?.data || err.message);
-        toast.error("Failed to load risks");
-      });
-  }, [loadAnalytics]);
+      } catch (err) {
+        console.error("Load analytics error:", err.response?.data || err.message);
+
+        if (requestId === latestRequestId.current) {
+          setAnalytics(null);
+          toast.error("Failed to load analytics");
+        }
+      } finally {
+        if (requestId === latestRequestId.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [normalizeAnalytics]
+  );
+
+  const loadRisks = useCallback(async () => {
+    try {
+      const res = await getRisks();
+      const data = Array.isArray(res.data) ? res.data : [];
+      setRisks(data);
+
+      if (data.length > 0) {
+        setSelectedRiskId(String(data[0].id));
+      } else {
+        setSelectedRiskId("");
+        setAnalytics(null);
+      }
+    } catch (err) {
+      console.error("Load risks error:", err.response?.data || err.message);
+      toast.error("Failed to load risks");
+    }
+  }, []);
 
   useEffect(() => {
     loadRisks();
   }, [loadRisks]);
 
+  // Load analytics only when selectedRiskId changes
+  useEffect(() => {
+    if (selectedRiskId) {
+      loadAnalytics(selectedRiskId);
+    }
+  }, [selectedRiskId, loadAnalytics]);
+
   const handleChange = (e) => {
     const id = e.target.value;
     setSelectedRiskId(id);
-    loadAnalytics(id);
   };
 
   return (
@@ -105,7 +135,13 @@ function RiskAnalytics() {
         </select>
       </div>
 
-      {analytics && (
+      {loading && (
+        <div className="analytics-card">
+          <p>Loading analytics...</p>
+        </div>
+      )}
+
+      {!loading && analytics && (
         <div className="analytics-grid">
           <div className="analytics-card">
             <h3>Quality Score</h3>
