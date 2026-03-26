@@ -41,6 +41,7 @@ function Risks() {
       })
       .catch((err) => {
         console.error("Projects error:", err.response?.data || err.message);
+        toast.error("Failed to load projects");
       });
   };
 
@@ -51,6 +52,7 @@ function Risks() {
       })
       .catch((err) => {
         console.error("Users error:", err.response?.data || err.message);
+        toast.error("Failed to load users");
       });
   };
 
@@ -162,7 +164,7 @@ function Risks() {
 
         <select
           value={probability}
-          onChange={(e) => setProbability(e.target.value)}
+          onChange={(e) => setProbability(Number(e.target.value))}
           required
         >
           <option value={1}>Probability 1</option>
@@ -172,7 +174,7 @@ function Risks() {
 
         <select
           value={impact}
-          onChange={(e) => setImpact(e.target.value)}
+          onChange={(e) => setImpact(Number(e.target.value))}
           required
         >
           <option value={1}>Impact 1</option>
@@ -180,7 +182,11 @@ function Risks() {
           <option value={3}>Impact 3</option>
         </select>
 
-        <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+        <select
+          value={projectId}
+          onChange={(e) => setProjectId(e.target.value)}
+          required
+        >
           <option value="">Select Project</option>
           {projects.map((project) => (
             <option key={project.id} value={project.id}>
@@ -189,7 +195,11 @@ function Risks() {
           ))}
         </select>
 
-        <select value={userId} onChange={(e) => setUserId(e.target.value)}>
+        <select
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+          required
+        >
           <option value="">Assign User</option>
           {users.map((user) => (
             <option key={user.id} value={user.id}>
@@ -240,8 +250,12 @@ function Risks() {
                   <td>{risk.project?.name || "N/A"}</td>
                   <td>{risk.user?.name || "N/A"}</td>
                   <td>
-                    <button onClick={() => handleEdit(risk)}>Edit</button>
-                    <button onClick={() => handleDelete(risk.id)}>Delete</button>
+                    <button type="button" onClick={() => handleEdit(risk)}>
+                      Edit
+                    </button>
+                    <button type="button" onClick={() => handleDelete(risk.id)}>
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))
